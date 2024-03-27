@@ -91,7 +91,9 @@ public class DiscordLogging {
     }
 
     public void error(@NotNull String message, @Nullable Throwable throwable, @NotNull String textChannelId) {
-        MessageCreateAction messageCreateAction = getTextChannel(textChannelId)
+        TextChannel textChannel = textChannelId.isBlank() ? getGuild().getSystemChannel() : getTextChannel(textChannelId);
+        MessageCreateAction messageCreateAction = ofNullable(textChannel)
+                .orElseThrow(() -> new IllegalStateException("No textChannelId specified and no System-Channel found in guild with id '" + this.guildId + "'"))
                 .sendMessage(this.errorMessageTemplate.applyMessage(message));
 
         if (this.appendStacktraceToError && nonNull(throwable)) {
