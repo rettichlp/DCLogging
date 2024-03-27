@@ -9,7 +9,6 @@ import org.mockito.ArgumentMatcher;
 
 import java.util.regex.Pattern;
 
-import static java.nio.file.Paths.get;
 import static java.util.regex.Pattern.compile;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -208,14 +207,12 @@ public class DiscordLoggingTest {
         verify(this.messageCreateAction).queue();
     }
 
-//    @Test TODO
+    @Test
     public void testDiscordLoggingStacktrace() {
         when(this.textChannel.sendMessage(anyString())).thenReturn(this.messageCreateAction);
         when(this.messageCreateAction.addFiles(any(FileUpload.class))).thenReturn(this.messageCreateAction);
 
         doReturn(this.textChannel).when(this.discordLogging).getTextChannel("textChannelId");
-
-        doReturn(get("stacktrace.txt").toFile()).when(this.discordLogging).createStacktraceFile(any(Throwable.class));
 
         String message = "message_error";
         this.discordLogging.error(message, new NullPointerException("test exception"));
@@ -226,7 +223,7 @@ public class DiscordLoggingTest {
                 - %s
                 ```
                 """.formatted(message))));
-        verify(this.discordLogging).createStacktraceFile(any(Throwable.class));
+        verify(this.discordLogging).throwableToInputStream(any(Throwable.class));
         verify(this.messageCreateAction).addFiles(any(FileUpload.class));
         verify(this.messageCreateAction).queue();
     }

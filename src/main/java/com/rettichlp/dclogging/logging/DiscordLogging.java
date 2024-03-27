@@ -10,18 +10,16 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.event.Level;
 
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.PrintWriter;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
+import java.io.PrintStream;
 
 import static com.rettichlp.dclogging.message.MessageTemplate.MessageTemplateType.ERROR;
 import static com.rettichlp.dclogging.message.MessageTemplate.MessageTemplateType.INFO;
 import static com.rettichlp.dclogging.message.MessageTemplate.MessageTemplateType.WARN;
-import static java.lang.System.currentTimeMillis;
 import static java.util.Objects.nonNull;
 import static java.util.Optional.ofNullable;
-import static java.util.logging.LogManager.getLogManager;
 import static net.dv8tion.jda.api.utils.FileUpload.fromData;
 import static net.dv8tion.jda.api.utils.cache.CacheFlag.MEMBER_OVERRIDES;
 import static net.dv8tion.jda.api.utils.cache.CacheFlag.VOICE_STATE;
@@ -97,8 +95,7 @@ public class DiscordLogging {
                 .sendMessage(this.errorMessageTemplate.applyMessage(message));
 
         if (this.appendStacktraceToError && nonNull(throwable)) {
-            File stacktraceFile = createStacktraceFile(throwable);
-            messageCreateAction.addFiles(fromData(stacktraceFile));
+            messageCreateAction.addFiles(fromData(throwableToInputStream(throwable), "stacktrace.txt"));
         }
 
         messageCreateAction.queue();
@@ -196,14 +193,11 @@ public class DiscordLogging {
                 .orElseThrow(() -> new IllegalArgumentException("TextChannel not found in guild " + guild.getName() + " (" + this.guildId + ")"));
     }
 
-    File createStacktraceFile(Throwable throwable) {
-        File stacktraceFile = new File("stacktrace_" + currentTimeMillis() + ".txt");
-
-        try (PrintWriter writer = new PrintWriter(new FileWriter(stacktraceFile))) {
-            throwable.printStackTrace(writer);
-            return stacktraceFile;
-        } catch (IOException ex) {
-            throw new RuntimeException(ex);
-        }
+    InputStream throwableToInputStream(Throwable throwable) {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        PrintStream ps = new PrintStream(baos);
+        throwable.printStackTrace(ps);
+        ps.close();
+        return new ByteArrayInputStream(baos.toByteArray());
     }
 }
