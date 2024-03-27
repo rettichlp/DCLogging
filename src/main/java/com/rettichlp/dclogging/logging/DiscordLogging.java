@@ -19,9 +19,9 @@ import static com.rettichlp.dclogging.message.MessageTemplate.MessageTemplateTyp
 import static com.rettichlp.dclogging.message.MessageTemplate.MessageTemplateType.INFO;
 import static com.rettichlp.dclogging.message.MessageTemplate.MessageTemplateType.WARN;
 import static java.lang.System.currentTimeMillis;
-import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static java.util.Optional.ofNullable;
+import static java.util.logging.LogManager.getLogManager;
 import static net.dv8tion.jda.api.utils.FileUpload.fromData;
 import static net.dv8tion.jda.api.utils.cache.CacheFlag.MEMBER_OVERRIDES;
 import static net.dv8tion.jda.api.utils.cache.CacheFlag.VOICE_STATE;
@@ -104,8 +104,19 @@ public class DiscordLogging {
 
     @NotNull
     private Guild getGuild() {
-        if (isNull(BOT)) {
-            BOT = JDABuilder
+        return ofNullable(this.jda.getGuildById(this.guildId))
+                .orElseThrow(() -> new IllegalStateException("Bot is not a member in guild with id '" + this.guildId + "'"));
+    }
+
+    private void send(@NotNull String textChannelId, @NotNull String message) {
+        TextChannel textChannel = textChannelId.isBlank() ? getGuild().getSystemChannel() : getTextChannel(textChannelId);
+
+        ofNullable(textChannel)
+                .map(tc -> tc.sendMessage(message))
+                .orElseThrow(() -> new IllegalStateException("No textChannelId specified and no System-Channel found in guild with id '" + this.guildId + "'"))
+                .queue();
+    }
+
     public static Builder getBuilder() {
         return new Builder();
     }
@@ -180,7 +191,7 @@ public class DiscordLogging {
     TextChannel getTextChannel(@NotNull String textChannelId) {
         Guild guild = getGuild();
         return ofNullable(guild.getTextChannelById(textChannelId))
-                .orElseThrow(() -> new NullPointerException("TextChannel not found in guild " + guild.getName() + " (" + this.guildId + ")"));
+                .orElseThrow(() -> new IllegalArgumentException("TextChannel not found in guild " + guild.getName() + " (" + this.guildId + ")"));
     }
 
     File createStacktraceFile(Throwable throwable) {

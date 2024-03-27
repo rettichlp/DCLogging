@@ -36,7 +36,8 @@ public class DiscordLoggingTest {
     public void setUp() {
         this.textChannel = mock(TextChannel.class);
         this.messageCreateAction = mock(MessageCreateAction.class);
-        this.discordLogging = spy(DiscordLogging.builder()
+        this.discordLogging = spy(DiscordLogging.getBuilder()
+                .botToken("botToken")
                 .guildId("guildId")
                 .textChannelId("textChannelId")
                 .build());
@@ -232,7 +233,8 @@ public class DiscordLoggingTest {
 
     @Test
     public void testDiscordLoggingStacktraceDisallowed() {
-        DiscordLogging discordLogging = spy(DiscordLogging.builder()
+        DiscordLogging discordLogging = spy(DiscordLogging.getBuilder()
+                .botToken("botToken")
                 .guildId("guildId")
                 .textChannelId("textChannelId")
                 .appendStacktraceToError(false)
