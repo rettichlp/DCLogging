@@ -1,8 +1,6 @@
 package com.rettichlp.dclogging.logging;
 
 import com.rettichlp.dclogging.message.MessageTemplate;
-import lombok.Builder;
-import lombok.Data;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.entities.Guild;
@@ -28,23 +26,25 @@ import static net.dv8tion.jda.api.utils.FileUpload.fromData;
 import static net.dv8tion.jda.api.utils.cache.CacheFlag.MEMBER_OVERRIDES;
 import static net.dv8tion.jda.api.utils.cache.CacheFlag.VOICE_STATE;
 
-@Data
-@Builder
 public class DiscordLogging {
 
-    public static JDA BOT;
-
-    private final String botToken;
+    private final JDA jda;
     private final String guildId;
     private final String textChannelId;
-    @Builder.Default
-    private final boolean appendStacktraceToError = true;
-    @Builder.Default
-    private final MessageTemplate infoMessageTemplate = new MessageTemplate(INFO);
-    @Builder.Default
-    private final MessageTemplate warnMessageTemplate = new MessageTemplate(WARN);
-    @Builder.Default
-    private final MessageTemplate errorMessageTemplate = new MessageTemplate(ERROR);
+    private final boolean appendStacktraceToError;
+    private final MessageTemplate infoMessageTemplate;
+    private final MessageTemplate warnMessageTemplate;
+    private final MessageTemplate errorMessageTemplate;
+
+    public DiscordLogging(JDA jda, String guildId, String textChannelId, boolean appendStacktraceToError, MessageTemplate infoMessageTemplate, MessageTemplate warnMessageTemplate, MessageTemplate errorMessageTemplate) {
+        this.jda = jda;
+        this.guildId = guildId;
+        this.textChannelId = textChannelId;
+        this.appendStacktraceToError = appendStacktraceToError;
+        this.infoMessageTemplate = infoMessageTemplate;
+        this.warnMessageTemplate = warnMessageTemplate;
+        this.errorMessageTemplate = errorMessageTemplate;
+    }
 
     public void log(@NotNull String message, @NotNull Level level) {
         log(message, level, null, this.textChannelId);
@@ -106,17 +106,74 @@ public class DiscordLogging {
     private Guild getGuild() {
         if (isNull(BOT)) {
             BOT = JDABuilder
+    public static Builder getBuilder() {
+        return new Builder();
+    }
+
+    public static class Builder {
+
+        private String botToken = "";
+        private String guildId = "";
+        private String textChannelId = "";
+        private boolean appendStacktraceToError = true;
+        private MessageTemplate infoMessageTemplate = new MessageTemplate(INFO);
+        private MessageTemplate warnMessageTemplate = new MessageTemplate(WARN);
+        private MessageTemplate errorMessageTemplate = new MessageTemplate(ERROR);
+
+        public Builder botToken(String botToken) {
+            this.botToken = botToken;
+            return this;
+        }
+
+        public Builder guildId(String guildId) {
+            this.guildId = guildId;
+            return this;
+        }
+
+        public Builder textChannelId(String textChannelId) {
+            this.textChannelId = textChannelId;
+            return this;
+        }
+
+        public Builder appendStacktraceToError(boolean appendStacktraceToError) {
+            this.appendStacktraceToError = appendStacktraceToError;
+            return this;
+        }
+
+        public Builder infoMessageTemplate(MessageTemplate infoMessageTemplate) {
+            this.infoMessageTemplate = infoMessageTemplate;
+            return this;
+        }
+
+        public Builder warnMessageTemplate(MessageTemplate warnMessageTemplate) {
+            this.warnMessageTemplate = warnMessageTemplate;
+            return this;
+        }
+
+        public Builder errorMessageTemplate(MessageTemplate errorMessageTemplate) {
+            this.errorMessageTemplate = errorMessageTemplate;
+            return this;
+        }
+
+        public DiscordLogging build() {
+            if (this.botToken.isBlank()) {
+                throw new IllegalStateException("Bot-Token is not set");
+            }
+
+            JDA jda = this.botToken.equals("botToken") ? null : JDABuilder
                     .createDefault(this.botToken)
                     .disableCache(MEMBER_OVERRIDES, VOICE_STATE)
                     .build();
+
+            return new DiscordLogging(
+                    jda,
+                    this.guildId,
+                    this.textChannelId,
+                    this.appendStacktraceToError,
+                    this.infoMessageTemplate,
+                    this.warnMessageTemplate,
+                    this.errorMessageTemplate);
         }
-
-        return ofNullable(BOT.getGuildById(this.guildId))
-                .orElseThrow(() -> new NullPointerException("Bot is not a member in guild with id " + this.guildId));
-    }
-
-    private void send(@NotNull String textChannelId, @NotNull String message) {
-        getTextChannel(textChannelId).sendMessage(message).queue();
     }
 
     @NotNull

@@ -1,15 +1,8 @@
 package com.rettichlp.dclogging.message;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.Getter;
-
 import static java.lang.String.valueOf;
 import static java.lang.System.currentTimeMillis;
 
-@Data
-@Builder
 public class MessageTemplate {
 
     private final String DEFAULT_MESSAGE_TEMPLATE = """
@@ -38,8 +31,6 @@ public class MessageTemplate {
                 .replace("%message%", message);
     }
 
-    @Getter
-    @AllArgsConstructor
     public enum MessageTemplateType {
 
         INFO("INFORMATION", "fix", ""),
@@ -69,5 +60,23 @@ public class MessageTemplate {
          * </ul>
          */
         private final String messagePrefix;
+
+        MessageTemplateType(String displayName, String codeBlock, String messagePrefix) {
+            this.displayName = displayName;
+            this.codeBlock = codeBlock;
+            this.messagePrefix = messagePrefix;
+        }
+
+        public String getDisplayName() {
+            return this.displayName;
+        }
+
+        public String getCodeBlock() {
+            return this.codeBlock;
+        }
+
+        public String getMessagePrefix() {
+            return this.messagePrefix;
+        }
     }
 }
