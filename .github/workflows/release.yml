@@ -35,7 +35,7 @@ jobs:
         with:
           servers: |
             [{
-              "id": "reposilite-repository",
+              "id": "rettichlp",
               "username": "${{ secrets.MAVEN_NAME }}",
               "password": "${{ secrets.MAVEN_SECRET }}"
             }]
