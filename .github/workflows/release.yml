@@ -31,6 +31,11 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
+      - name: Update Maven Version
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          sed -i "s#%VERSION%#$VERSION#g" pom.xml
       - uses: s4u/maven-settings-action@v3.0.0
         with:
           servers: |
@@ -46,10 +51,10 @@ jobs:
       - name: Create release notes
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          tag: v${{ inputs.version }}
+          tag: ${{ inputs.version }}
         run: |
           gh release create "$tag" \
               --target main \
               --repo="$GITHUB_REPOSITORY" \
-              --title="Release v$tag" \
+              --title="Release $tag" \
               --generate-notes
