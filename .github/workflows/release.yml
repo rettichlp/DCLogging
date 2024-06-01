@@ -40,6 +40,20 @@ jobs:
               "password": "${{ secrets.MAVEN_SECRET }}"
             }]
 
+      - name: Update Maven Version
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          sed -i 's/<version>.*<\/version>/<version>'"$VERSION"'<\/version>/' pom.xml
+
+      - name: Commit changes
+        run: |
+          git config --global user.name 'RettichLP'
+          git config --global user.email 'rettichlp01@gmail.com'
+          git add pom.xml
+          git commit -m "Update version to $VERSION"
+          git push
+
       - name: Deploy with Maven
         run: mvn deploy -Dmaven.test.skip
 
