@@ -50,14 +50,17 @@ jobs:
           echo "# Fetch all"
           git fetch --all
 
-          echo "# Commit and push develop"
-          git add pom.xml && git commit -m "Update version to $VERSION" && git push origin develop
+          echo "# Checkout release branch"
+          git checkout -b release/$VERSION
+
+          echo "# Commit and push release branch"
+          git add pom.xml && git commit -m "Update version to $VERSION" && git push origin release/$VERSION
 
           echo "# Checkout and pull main"
           git checkout main && git pull origin main
 
-          echo "# Merge develop into main and push main"
-          git merge develop && git push origin main
+          echo "# Merge release branch into main and push main"
+          git merge release/$VERSION && git push origin main
       - uses: s4u/maven-settings-action@v3.0.0
         with:
           servers: |
