@@ -55,7 +55,7 @@ Add the following repository to your `build.gradle.kts`:
 ```kts
 maven {
     name = "rettichlpRepository"
-    url = uri("https://maven.rettichlp.de/<repository>")
+    url = uri("https://maven.rettichlp.de/releases")
 }
 ```
 
@@ -76,7 +76,7 @@ Add the following repository to your `build.gradle`:
 ```groovy
 maven {
     name "rettichlpRepository"
-    url "https://maven.rettichlp.de/<repository>"
+    url "https://maven.rettichlp.de/releases"
 }
 ```
 
