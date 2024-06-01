@@ -42,3 +42,14 @@ jobs:
 
       - name: Deploy with Maven
         run: mvn deploy -Dmaven.test.skip
+
+      - name: Create release notes
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          tag: v${{ inputs.version }}
+        run: |
+          gh release create "$tag" \
+              --target main \
+              --repo="$GITHUB_REPOSITORY" \
+              --title="Release v$tag" \
+              --generate-notes
