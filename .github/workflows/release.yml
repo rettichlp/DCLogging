@@ -60,7 +60,7 @@ jobs:
           git checkout main && git pull origin main
 
           echo "# Merge release branch into main and push main"
-          git merge release/$VERSION && git push origin main
+          git merge release/$VERSION -X theirs && git push origin main
       - uses: s4u/maven-settings-action@v3.0.0
         with:
           servers: |
