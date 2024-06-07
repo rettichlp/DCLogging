@@ -1,10 +1,10 @@
-package com.rettichlp.dclogging.message;
+package de.rettichlp.dclogging.message;
 
 import org.junit.jupiter.api.Test;
 
-import static com.rettichlp.dclogging.message.MessageTemplate.MessageTemplateType.ERROR;
-import static com.rettichlp.dclogging.message.MessageTemplate.MessageTemplateType.INFO;
-import static com.rettichlp.dclogging.message.MessageTemplate.MessageTemplateType.WARN;
+import static de.rettichlp.dclogging.message.MessageTemplate.MessageTemplateType.ERROR;
+import static de.rettichlp.dclogging.message.MessageTemplate.MessageTemplateType.INFO;
+import static de.rettichlp.dclogging.message.MessageTemplate.MessageTemplateType.WARN;
 
 public class MessageTemplateTest {
 

@@ -1,4 +1,4 @@
-package com.rettichlp.dclogging.message;
+package de.rettichlp.dclogging.message;
 
 import static java.lang.String.valueOf;
 import static java.lang.System.currentTimeMillis;

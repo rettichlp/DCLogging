@@ -42,7 +42,7 @@ Add the following dependency to your `pom.xml`:
 <dependency>
     <groupId>de.rettichlp</groupId>
     <artifactId>dclogging</artifactId>
-    <version>1.1.1</version>
+    <version>[VERSION]</version>
 </dependency>
 ```
 
@@ -64,7 +64,7 @@ maven {
 Add the following dependency to your `build.gradle.kts`:
 
 ```kts
-implementation("de.rettichlp:dclogging:1.1.1")
+implementation("de.rettichlp:dclogging:[VERSION]")
 ```
 
 ### Gradle Groovy
@@ -85,7 +85,7 @@ maven {
 Add the following dependency to your `build.gradle`:
 
 ```groovy
-implementation "de.rettichlp:dclogging:1.1.1"
+implementation "de.rettichlp:dclogging:[VERSION]"
 ```
 
 ## Installing and configuration

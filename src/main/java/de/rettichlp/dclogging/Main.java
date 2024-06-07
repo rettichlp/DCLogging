@@ -1,4 +1,4 @@
-package com.rettichlp.dclogging;
+package de.rettichlp.dclogging;
 
 public class Main {
 

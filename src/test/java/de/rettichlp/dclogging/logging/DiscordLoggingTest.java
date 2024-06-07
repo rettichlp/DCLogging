@@ -1,4 +1,4 @@
-package com.rettichlp.dclogging.logging;
+package de.rettichlp.dclogging.logging;
 
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.requests.restaction.MessageCreateAction;

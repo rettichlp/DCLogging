@@ -1,6 +1,6 @@
-package com.rettichlp.dclogging.logging;
+package de.rettichlp.dclogging.logging;
 
-import com.rettichlp.dclogging.message.MessageTemplate;
+import de.rettichlp.dclogging.message.MessageTemplate;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.entities.Guild;
@@ -15,9 +15,9 @@ import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.io.PrintStream;
 
-import static com.rettichlp.dclogging.message.MessageTemplate.MessageTemplateType.ERROR;
-import static com.rettichlp.dclogging.message.MessageTemplate.MessageTemplateType.INFO;
-import static com.rettichlp.dclogging.message.MessageTemplate.MessageTemplateType.WARN;
+import static de.rettichlp.dclogging.message.MessageTemplate.MessageTemplateType.ERROR;
+import static de.rettichlp.dclogging.message.MessageTemplate.MessageTemplateType.INFO;
+import static de.rettichlp.dclogging.message.MessageTemplate.MessageTemplateType.WARN;
 import static java.util.Objects.nonNull;
 import static java.util.Optional.ofNullable;
 import static net.dv8tion.jda.api.utils.FileUpload.fromData;
