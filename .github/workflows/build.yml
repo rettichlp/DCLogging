@@ -1,6 +1,8 @@
-name: Maven Build
+name: Build
 
 on:
+  pull_request:
+    branches: [ "main", "develop" ]
   push:
     branches: [ "develop" ]
 
@@ -11,15 +13,17 @@ concurrency:
 jobs:
   build:
 
+    name: 🏗️ Build DC Logging
     runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v4
-      - name: Set up JDK 17
+
+      - name: Set up JDK
         uses: actions/setup-java@v4
         with:
-          java-version: '17'
           distribution: 'temurin'
+          java-version: '17'
           cache: maven
 
       - name: Build with Maven

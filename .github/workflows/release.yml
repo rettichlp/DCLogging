@@ -1,4 +1,4 @@
-name: Maven Release
+name: Release
 
 on:
   workflow_dispatch:
@@ -8,59 +8,53 @@ on:
         required: true
         type: string
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
-
 run-name: Create release v${{ inputs.version }}
 
 permissions:
   contents: write
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   release:
 
+    name: 🎉 Release DC Logging
     runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Set up JDK 17
+
+      - name: Configure git
+        run: |
+          user_name=$(curl -s 'https://api.github.com/users/${{ github.actor }}' | jq -r '.name')
+          git config --global user.name "$user_name"
+          git config --global user.email "${{ github.actor_id }}+${{ github.actor }}@users.noreply.github.com"
+
+      - name: Update project version
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: mvn versions:set -DnewVersion=${{ inputs.version }}
+
+      - name: Commit and merge develop branch to main
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git commit --all -m "Update version to ${{ inputs.version }}" && git push origin develop
+          git fetch --all
+          git checkout --track origin/main && git pull
+          git merge --no-ff -m "Release ${{ inputs.version }}" develop && git push origin main
+
+      - name: Set up JDK
         uses: actions/setup-java@v4
         with:
-          java-version: '17'
           distribution: 'temurin'
+          java-version: '17'
           cache: maven
 
-      - name: Update Maven Version
-        env:
-          VERSION: ${{ inputs.version }}
-        run: |
-          sed -i "s#%VERSION%#$VERSION#g" pom.xml
-
-      - name: Commit changes
-        env:
-          VERSION: ${{ inputs.version }}
-        run: |
-          echo "# Config"
-          git config --global user.name 'RettichLP'
-          git config --global user.email 'rettichlp01@gmail.com'
-
-          echo "# Fetch all"
-          git fetch --all
-
-          echo "# Checkout release branch"
-          git checkout -b release/$VERSION
-
-          echo "# Commit and push release branch"
-          git add pom.xml && git commit -m "Update version to $VERSION" && git push origin release/$VERSION
-
-          echo "# Checkout and pull main"
-          git checkout main && git pull origin main
-
-          echo "# Merge release branch into main and push main"
-          git merge release/$VERSION -X theirs && git push origin main
       - uses: s4u/maven-settings-action@v3.0.0
         with:
           servers: |
