@@ -35,7 +35,13 @@ public class DiscordLogging {
     private final MessageTemplate warnMessageTemplate;
     private final MessageTemplate errorMessageTemplate;
 
-    public DiscordLogging(JDA jda, String guildId, String textChannelId, boolean appendStacktraceToError, MessageTemplate infoMessageTemplate, MessageTemplate warnMessageTemplate, MessageTemplate errorMessageTemplate) {
+    public DiscordLogging(JDA jda,
+                          String guildId,
+                          String textChannelId,
+                          boolean appendStacktraceToError,
+                          MessageTemplate infoMessageTemplate,
+                          MessageTemplate warnMessageTemplate,
+                          MessageTemplate errorMessageTemplate) {
         this.jda = jda;
         this.guildId = guildId;
         this.textChannelId = textChannelId;
@@ -50,8 +56,10 @@ public class DiscordLogging {
      *
      * @param message the message to log
      * @param level   the level at which to log the message
+     *
+     * @throws IllegalStateException if the text channel cannot be found
      */
-    public void log(@NotNull String message, @NotNull Level level) {
+    public void log(@NotNull String message, @NotNull Level level) throws IllegalStateException {
         log(message, level, null, this.textChannelId);
     }
 
@@ -61,8 +69,10 @@ public class DiscordLogging {
      * @param message   the message to log
      * @param level     the level at which to log the message
      * @param throwable an optional throwable to log
+     *
+     * @throws IllegalStateException if the text channel cannot be found
      */
-    public void log(@NotNull String message, @NotNull Level level, @Nullable Throwable throwable) {
+    public void log(@NotNull String message, @NotNull Level level, @Nullable Throwable throwable) throws IllegalStateException {
         log(message, level, throwable, this.textChannelId);
     }
 
@@ -72,8 +82,10 @@ public class DiscordLogging {
      * @param message       the message to log
      * @param level         the level at which to log the message
      * @param textChannelId the ID of the text channel to log the message to
+     *
+     * @throws IllegalStateException if the text channel cannot be found
      */
-    public void log(@NotNull String message, @NotNull Level level, @NotNull String textChannelId) {
+    public void log(@NotNull String message, @NotNull Level level, @NotNull String textChannelId) throws IllegalStateException {
         log(message, level, null, textChannelId);
     }
 
@@ -87,7 +99,8 @@ public class DiscordLogging {
      *
      * @throws IllegalStateException if the text channel cannot be found
      */
-    public void log(@NotNull String message, @NotNull Level level, @Nullable Throwable throwable, @NotNull String textChannelId) throws IllegalStateException {
+    public void log(@NotNull String message, @NotNull Level level, @Nullable Throwable throwable, @NotNull String textChannelId) throws
+                                                                                                                                 IllegalStateException {
         switch (level) {
             case INFO -> info(message, textChannelId);
             case WARN -> warn(message, textChannelId);
@@ -100,8 +113,10 @@ public class DiscordLogging {
      *
      * @param message the message to log
      * @param args    optional arguments to format the message
+     *
+     * @throws IllegalStateException if the text channel cannot be found
      */
-    public void info(@NotNull String message, Object... args) {
+    public void info(@NotNull String message, Object... args) throws IllegalStateException {
         info(populate(message, args), this.textChannelId);
     }
 
@@ -110,8 +125,10 @@ public class DiscordLogging {
      *
      * @param message       the message to log
      * @param textChannelId the ID of the text channel to log the message to
+     *
+     * @throws IllegalStateException if the text channel cannot be found
      */
-    public void info(@NotNull String message, @NotNull String textChannelId) {
+    public void info(@NotNull String message, @NotNull String textChannelId) throws IllegalStateException {
         send(textChannelId, this.infoMessageTemplate.applyMessage(message));
     }
 
@@ -120,8 +137,10 @@ public class DiscordLogging {
      *
      * @param message the message to log
      * @param args    optional arguments to format the message
+     *
+     * @throws IllegalStateException if the text channel cannot be found
      */
-    public void warn(@NotNull String message, Object... args) {
+    public void warn(@NotNull String message, Object... args) throws IllegalStateException {
         warn(populate(message, args), this.textChannelId);
     }
 
@@ -130,8 +149,10 @@ public class DiscordLogging {
      *
      * @param message       the message to log
      * @param textChannelId the ID of the text channel to log the message to
+     *
+     * @throws IllegalStateException if the text channel cannot be found
      */
-    public void warn(@NotNull String message, @NotNull String textChannelId) {
+    public void warn(@NotNull String message, @NotNull String textChannelId) throws IllegalStateException {
         send(textChannelId, this.warnMessageTemplate.applyMessage(message));
     }
 
@@ -168,7 +189,8 @@ public class DiscordLogging {
      *
      * @throws IllegalStateException if the text channel cannot be found
      */
-    public void error(@NotNull String message, @Nullable Throwable throwable, @NotNull String textChannelId) throws IllegalStateException {
+    public void error(@NotNull String message, @Nullable Throwable throwable, @NotNull String textChannelId) throws
+                                                                                                             IllegalStateException {
         TextChannel textChannel = textChannelId.isBlank() ? getGuild().getSystemChannel() : getTextChannel(textChannelId);
         MessageCreateAction messageCreateAction = ofNullable(textChannel)
                 .orElseThrow(() -> new IllegalStateException("No textChannelId specified and no System-Channel found in guild with id '" + this.guildId + "'"))
@@ -179,6 +201,38 @@ public class DiscordLogging {
         }
 
         messageCreateAction.queue();
+    }
+
+    /**
+     * Retrieves a text channel by its ID.
+     *
+     * @param textChannelId the ID of the text channel to retrieve
+     *
+     * @return the TextChannel object
+     *
+     * @throws IllegalStateException    if the guild cannot be found
+     * @throws IllegalArgumentException if the text channel cannot be found in the guild
+     */
+    @NotNull
+    TextChannel getTextChannel(@NotNull String textChannelId) throws IllegalStateException {
+        Guild guild = getGuild();
+        return ofNullable(guild.getTextChannelById(textChannelId))
+                .orElseThrow(() -> new IllegalArgumentException("TextChannel not found in guild " + guild.getName() + " (" + this.guildId + ")"));
+    }
+
+    /**
+     * Converts a Throwable to an InputStream.
+     *
+     * @param throwable the Throwable to convert
+     *
+     * @return an InputStream containing the stack trace of the Throwable
+     */
+    InputStream throwableToInputStream(Throwable throwable) {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        PrintStream ps = new PrintStream(baos);
+        throwable.printStackTrace(ps);
+        ps.close();
+        return new ByteArrayInputStream(baos.toByteArray());
     }
 
     /**
@@ -297,20 +351,5 @@ public class DiscordLogging {
                     this.warnMessageTemplate,
                     this.errorMessageTemplate);
         }
-    }
-
-    @NotNull
-    TextChannel getTextChannel(@NotNull String textChannelId) throws IllegalStateException {
-        Guild guild = getGuild();
-        return ofNullable(guild.getTextChannelById(textChannelId))
-                .orElseThrow(() -> new IllegalArgumentException("TextChannel not found in guild " + guild.getName() + " (" + this.guildId + ")"));
-    }
-
-    InputStream throwableToInputStream(Throwable throwable) {
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        PrintStream ps = new PrintStream(baos);
-        throwable.printStackTrace(ps);
-        ps.close();
-        return new ByteArrayInputStream(baos.toByteArray());
     }
 }
