@@ -14,6 +14,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.io.PrintStream;
+import java.util.stream.Stream;
 
 import static de.rettichlp.dclogging.message.MessageTemplate.MessageTemplateType.ERROR;
 import static de.rettichlp.dclogging.message.MessageTemplate.MessageTemplateType.INFO;
@@ -64,24 +65,24 @@ public class DiscordLogging {
         }
     }
 
-    public void info(@NotNull String message) {
-        info(message, this.textChannelId);
+    public void info(@NotNull String message, Object... args) {
+        info(populate(message, args), this.textChannelId);
     }
 
     public void info(@NotNull String message, @NotNull String textChannelId) {
         send(textChannelId, this.infoMessageTemplate.applyMessage(message));
     }
 
-    public void warn(@NotNull String message) {
-        warn(message, this.textChannelId);
+    public void warn(@NotNull String message, Object... args) {
+        warn(populate(message, args), this.textChannelId);
     }
 
     public void warn(@NotNull String message, @NotNull String textChannelId) {
         send(textChannelId, this.warnMessageTemplate.applyMessage(message));
     }
 
-    public void error(@NotNull String message) {
-        error(message, null, this.textChannelId);
+    public void error(@NotNull String message, Object... args) throws IllegalStateException {
+        error(populate(message, args), null, this.textChannelId);
     }
 
     public void error(@NotNull String message, @Nullable Throwable throwable) throws IllegalStateException {
@@ -114,6 +115,11 @@ public class DiscordLogging {
                 .map(tc -> tc.sendMessage(message))
                 .orElseThrow(() -> new IllegalStateException("No textChannelId specified and no System-Channel found in guild with id '" + this.guildId + "'"))
                 .queue();
+    }
+
+    private String populate(String template, Object[] args) {
+        return Stream.of(args)
+                .reduce(template, (result, arg) -> result.replaceFirst("\\{}", arg.toString()), (s1, s2) -> s1);
     }
 
     public static Builder getBuilder() {
