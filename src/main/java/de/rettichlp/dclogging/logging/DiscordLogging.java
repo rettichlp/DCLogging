@@ -56,7 +56,7 @@ public class DiscordLogging {
         log(message, level, null, textChannelId);
     }
 
-    public void log(@NotNull String message, @NotNull Level level, @Nullable Throwable throwable, @NotNull String textChannelId) {
+    public void log(@NotNull String message, @NotNull Level level, @Nullable Throwable throwable, @NotNull String textChannelId) throws IllegalStateException {
         switch (level) {
             case INFO -> info(message, textChannelId);
             case WARN -> warn(message, textChannelId);
@@ -84,11 +84,11 @@ public class DiscordLogging {
         error(message, null, this.textChannelId);
     }
 
-    public void error(@NotNull String message, @Nullable Throwable throwable) {
+    public void error(@NotNull String message, @Nullable Throwable throwable) throws IllegalStateException {
         error(message, throwable, this.textChannelId);
     }
 
-    public void error(@NotNull String message, @Nullable Throwable throwable, @NotNull String textChannelId) {
+    public void error(@NotNull String message, @Nullable Throwable throwable, @NotNull String textChannelId) throws IllegalStateException {
         TextChannel textChannel = textChannelId.isBlank() ? getGuild().getSystemChannel() : getTextChannel(textChannelId);
         MessageCreateAction messageCreateAction = ofNullable(textChannel)
                 .orElseThrow(() -> new IllegalStateException("No textChannelId specified and no System-Channel found in guild with id '" + this.guildId + "'"))
@@ -102,12 +102,12 @@ public class DiscordLogging {
     }
 
     @NotNull
-    private Guild getGuild() {
+    private Guild getGuild() throws IllegalStateException {
         return ofNullable(this.jda.getGuildById(this.guildId))
                 .orElseThrow(() -> new IllegalStateException("Bot is not a member in guild with id '" + this.guildId + "'"));
     }
 
-    private void send(@NotNull String textChannelId, @NotNull String message) {
+    private void send(@NotNull String textChannelId, @NotNull String message) throws IllegalStateException {
         TextChannel textChannel = textChannelId.isBlank() ? getGuild().getSystemChannel() : getTextChannel(textChannelId);
 
         ofNullable(textChannel)
@@ -187,7 +187,7 @@ public class DiscordLogging {
     }
 
     @NotNull
-    TextChannel getTextChannel(@NotNull String textChannelId) {
+    TextChannel getTextChannel(@NotNull String textChannelId) throws IllegalStateException {
         Guild guild = getGuild();
         return ofNullable(guild.getTextChannelById(textChannelId))
                 .orElseThrow(() -> new IllegalArgumentException("TextChannel not found in guild " + guild.getName() + " (" + this.guildId + ")"));
