@@ -1,5 +1,7 @@
 package de.rettichlp.dclogging.logging;
 
+import de.rettichlp.dclogging.exception.InvalidChannelIdException;
+import de.rettichlp.dclogging.exception.InvalidGuildIdException;
 import de.rettichlp.dclogging.message.MessageTemplate;
 import lombok.Builder;
 import lombok.Getter;
@@ -7,22 +9,14 @@ import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
-import net.dv8tion.jda.api.requests.restaction.MessageCreateAction;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.slf4j.event.Level;
-
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.InputStream;
-import java.io.PrintStream;
 
 import static de.rettichlp.dclogging.message.MessageTemplate.MessageTemplateType.ERROR;
 import static de.rettichlp.dclogging.message.MessageTemplate.MessageTemplateType.INFO;
 import static de.rettichlp.dclogging.message.MessageTemplate.MessageTemplateType.WARN;
-import static java.util.Objects.nonNull;
+import static java.util.Objects.isNull;
 import static java.util.Optional.ofNullable;
-import static net.dv8tion.jda.api.utils.FileUpload.fromData;
 import static net.dv8tion.jda.api.utils.cache.CacheFlag.MEMBER_OVERRIDES;
 import static net.dv8tion.jda.api.utils.cache.CacheFlag.VOICE_STATE;
 
@@ -79,148 +73,88 @@ public class DiscordLogging {
     @Builder.Default
     private final MessageTemplate errorMessageTemplate = new MessageTemplate(ERROR);
 
-    public void log(@NotNull String message, @NotNull Level level, @Nullable Throwable throwable, @NotNull String textChannelId) {
-        switch (level) {
-            case INFO -> info(message, textChannelId);
-            case WARN -> warn(message, textChannelId);
-            case ERROR -> error(message, throwable, textChannelId);
-        }
+    public void info(@NotNull String message, Object... args) {
+        LogMessage logMessage = LogMessage.builder()
+                .message(message)
+                .arguments(args)
+                .messageTemplateType(INFO)
+                .build();
+
+        logMessage.send(getTextChannel(this.textChannelId));
     }
 
-    public void info(@NotNull String message) {
-        info(message, this.textChannelId);
+    public void warn(@NotNull String message, Object... args) {
+        LogMessage logMessage = LogMessage.builder()
+                .message(message)
+                .arguments(args)
+                .messageTemplateType(WARN)
+                .build();
+
+        logMessage.send(getTextChannel(this.textChannelId));
     }
 
-    public void info(@NotNull String message, @NotNull String textChannelId) {
-        send(textChannelId, this.infoMessageTemplate.applyMessage(message));
+    public void error(@NotNull String message, Object... args) {
+        error(message, null, args);
     }
 
-    public void warn(@NotNull String message) {
-        warn(message, this.textChannelId);
+    public void error(@NotNull String message, @Nullable Throwable throwable, Object... args) {
+        LogMessage logMessage = LogMessage.builder()
+                .message(message)
+                .arguments(args)
+                .messageTemplateType(ERROR)
+                .throwable(throwable)
+                .build();
+
+        logMessage.send(getTextChannel(this.textChannelId));
     }
 
-    public void warn(@NotNull String message, @NotNull String textChannelId) {
-        send(textChannelId, this.warnMessageTemplate.applyMessage(message));
-    }
+    @NotNull
+    TextChannel getTextChannel(@Nullable String textChannelId) {
+        Guild guild = getGuild();
 
-    public void error(@NotNull String message) {
-        error(message, null, this.textChannelId);
-    }
+        TextChannel textChannel = isNull(textChannelId)
+                ? guild.getSystemChannel()
+                : guild.getTextChannelById(textChannelId);
 
-    public void error(@NotNull String message, @Nullable Throwable throwable) {
-        error(message, throwable, this.textChannelId);
-    }
-
-    public void error(@NotNull String message, @Nullable Throwable throwable, @NotNull String textChannelId) {
-        TextChannel textChannel = textChannelId.isBlank() ? getGuild().getSystemChannel() : getTextChannel(textChannelId);
-        MessageCreateAction messageCreateAction = ofNullable(textChannel)
-                .orElseThrow(() -> new IllegalStateException("No textChannelId specified and no System-Channel found in guild with id '" + this.guildId + "'"))
-                .sendMessage(this.errorMessageTemplate.applyMessage(message));
-
-        if (this.appendStacktraceToError && nonNull(throwable)) {
-            messageCreateAction.addFiles(fromData(throwableToInputStream(throwable), "stacktrace.txt"));
-        }
-
-        messageCreateAction.queue();
+        return ofNullable(textChannel)
+                .orElseThrow(() -> new InvalidChannelIdException("No textChannelId specified and no System-Channel found or no TextChannel found with id " + textChannelId + " in guild " + guild.getName() + " (" + this.guildId + ")"));
     }
 
     @NotNull
     private Guild getGuild() {
         return ofNullable(this.jda.getGuildById(this.guildId))
-                .orElseThrow(() -> new IllegalStateException("Bot is not a member in guild with id '" + this.guildId + "'"));
+                .orElseThrow(() -> new InvalidGuildIdException("Bot is not a member in guild with id '" + this.guildId + "'"));
     }
 
-    private void send(@NotNull String textChannelId, @NotNull String message) {
-        TextChannel textChannel = textChannelId.isBlank() ? getGuild().getSystemChannel() : getTextChannel(textChannelId);
+    /**
+     * A builder class for configuring and initializing Discord logging functionality. This builder allows you to set up the necessary
+     * configurations such as the Discord bot token.
+     * <p>
+     * Example usage:
+     * <pre>{@code
+     * DiscordLoggingBuilder builder = new DiscordLoggingBuilder()
+     *      .botToken("your-bot-token");
+     * }</pre>
+     */
+    public static class DiscordLoggingBuilder {
 
-        ofNullable(textChannel)
-                .map(tc -> tc.sendMessage(message))
-                .orElseThrow(() -> new IllegalStateException("No textChannelId specified and no System-Channel found in guild with id '" + this.guildId + "'"))
-                .queue();
-    }
-
-    public static Builder getBuilder() {
-        return new Builder();
-    }
-
-    public static class Builder {
-
-        private String botToken = "";
-        private String guildId = "";
-        private String textChannelId = "";
-        private boolean appendStacktraceToError = true;
-        private MessageTemplate infoMessageTemplate = new MessageTemplate(INFO);
-        private MessageTemplate warnMessageTemplate = new MessageTemplate(WARN);
-        private MessageTemplate errorMessageTemplate = new MessageTemplate(ERROR);
-
-        public Builder botToken(String botToken) {
-            this.botToken = botToken;
-            return this;
-        }
-
-        public Builder guildId(String guildId) {
-            this.guildId = guildId;
-            return this;
-        }
-
-        public Builder textChannelId(String textChannelId) {
-            this.textChannelId = textChannelId;
-            return this;
-        }
-
-        public Builder appendStacktraceToError(boolean appendStacktraceToError) {
-            this.appendStacktraceToError = appendStacktraceToError;
-            return this;
-        }
-
-        public Builder infoMessageTemplate(MessageTemplate infoMessageTemplate) {
-            this.infoMessageTemplate = infoMessageTemplate;
-            return this;
-        }
-
-        public Builder warnMessageTemplate(MessageTemplate warnMessageTemplate) {
-            this.warnMessageTemplate = warnMessageTemplate;
-            return this;
-        }
-
-        public Builder errorMessageTemplate(MessageTemplate errorMessageTemplate) {
-            this.errorMessageTemplate = errorMessageTemplate;
-            return this;
-        }
-
-        public DiscordLogging build() {
-            if (this.botToken.isBlank()) {
-                throw new IllegalStateException("Bot-Token is not set");
-            }
-
-            JDA jda = this.botToken.equals("botToken") ? null : JDABuilder
-                    .createDefault(this.botToken)
+        /**
+         * Sets the Discord bot token and initializes the JDA (Java Discord API) instance. This method configures the bot with the
+         * provided token, disables certain caches, and waits for the bot to be ready.
+         *
+         * @param botToken the Discord bot token. This token must not be blank.
+         *
+         * @return the {@code DiscordLoggingBuilder} instance for chaining additional configuration.
+         *
+         * @throws InterruptedException  if the thread is interrupted while waiting for the JDA to be ready.
+         */
+        public DiscordLoggingBuilder botToken(String botToken) throws InterruptedException {
+            this.jda = botToken.equals("botToken") ? null : JDABuilder
+                    .createDefault(botToken)
                     .disableCache(MEMBER_OVERRIDES, VOICE_STATE)
-                    .build();
+                    .build().awaitReady();
 
-            return new DiscordLogging(
-                    jda,
-                    this.guildId,
-                    this.textChannelId,
-                    this.appendStacktraceToError,
-                    this.infoMessageTemplate,
-                    this.warnMessageTemplate,
-                    this.errorMessageTemplate);
+            return this;
         }
-    }
-
-    @NotNull
-    TextChannel getTextChannel(@NotNull String textChannelId) {
-        Guild guild = getGuild();
-        return ofNullable(guild.getTextChannelById(textChannelId))
-                .orElseThrow(() -> new IllegalArgumentException("TextChannel not found in guild " + guild.getName() + " (" + this.guildId + ")"));
-    }
-
-    InputStream throwableToInputStream(Throwable throwable) {
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        PrintStream ps = new PrintStream(baos);
-        throwable.printStackTrace(ps);
-        ps.close();
-        return new ByteArrayInputStream(baos.toByteArray());
     }
 }
