@@ -73,6 +73,16 @@ public class DiscordLogging {
     @Builder.Default
     private final MessageTemplate errorMessageTemplate = new MessageTemplate(ERROR);
 
+    /**
+     * Logs an informational message to the specified text channel. The message can contain placeholders for additional arguments,
+     * which will be passed in the {@code args} parameter. This method constructs a log message of type {@code INFO} and sends it to
+     * the specified or default text channel.
+     *
+     * @param message the message template to log; must not be null
+     * @param args    additional arguments to fill in the placeholders of the message
+     *
+     * @throws InvalidChannelIdException if the text channel ID is invalid or no channel is found
+     */
     public void info(@NotNull String message, Object... args) {
         LogMessage logMessage = LogMessage.builder()
                 .message(message)
@@ -83,6 +93,16 @@ public class DiscordLogging {
         logMessage.send(getTextChannel(this.textChannelId));
     }
 
+    /**
+     * Logs a warning message to the specified text channel. The message can contain placeholders for additional arguments, which will
+     * be passed in the {@code args} parameter. This method constructs a log message of type {@code WARN} and sends it to the specified
+     * or default text channel.
+     *
+     * @param message the message template to log; must not be null
+     * @param args    additional arguments to fill in the placeholders of the message
+     *
+     * @throws InvalidChannelIdException if the text channel ID is invalid or no channel is found
+     */
     public void warn(@NotNull String message, Object... args) {
         LogMessage logMessage = LogMessage.builder()
                 .message(message)
@@ -93,10 +113,31 @@ public class DiscordLogging {
         logMessage.send(getTextChannel(this.textChannelId));
     }
 
+    /**
+     * Logs an error message to the specified text channel. This method acts as a shortcut for logging error messages without
+     * specifying a throwable. The message can contain placeholders for additional arguments, which will be passed in the {@code args}
+     * parameter.
+     *
+     * @param message the message template to log; must not be null
+     * @param args    additional arguments to fill in the placeholders of the message
+     *
+     * @throws InvalidChannelIdException if the text channel ID is invalid or no channel is found
+     */
     public void error(@NotNull String message, Object... args) {
         error(message, null, args);
     }
 
+    /**
+     * Logs an error message with an optional throwable to the specified text channel. The message can contain placeholders for
+     * additional arguments, which will be passed in the {@code args} parameter. If a throwable is provided, it will be included in the
+     * log message.
+     *
+     * @param message   the message template to log; must not be null
+     * @param throwable the throwable to log (optional); may be null
+     * @param args      additional arguments to fill in the placeholders of the message
+     *
+     * @throws InvalidChannelIdException if the text channel ID is invalid or no channel is found
+     */
     public void error(@NotNull String message, @Nullable Throwable throwable, Object... args) {
         LogMessage logMessage = LogMessage.builder()
                 .message(message)
@@ -108,8 +149,18 @@ public class DiscordLogging {
         logMessage.send(getTextChannel(this.textChannelId));
     }
 
+    /**
+     * Retrieves the text channel to which messages should be sent. If the {@code textChannelId} is null, the system channel of the
+     * guild is used. If no system channel or matching text channel is found, an {@code InvalidChannelIdException} is thrown.
+     *
+     * @param textChannelId the ID of the text channel (optional); may be null
+     *
+     * @return the {@code TextChannel} object to which messages should be sent
+     *
+     * @throws InvalidChannelIdException if no valid channel is found
+     */
     @NotNull
-    TextChannel getTextChannel(@Nullable String textChannelId) {
+    private TextChannel getTextChannel(@Nullable String textChannelId) {
         Guild guild = getGuild();
 
         TextChannel textChannel = isNull(textChannelId)
@@ -120,6 +171,14 @@ public class DiscordLogging {
                 .orElseThrow(() -> new InvalidChannelIdException("No textChannelId specified and no System-Channel found or no TextChannel found with id " + textChannelId + " in guild " + guild.getName() + " (" + this.guildId + ")"));
     }
 
+    /**
+     * Retrieves the guild associated with the bot using the guild ID. If no guild is found or the bot is not a member of the guild, an
+     * {@code InvalidGuildIdException} is thrown.
+     *
+     * @return the {@code Guild} object representing the bot's guild
+     *
+     * @throws InvalidGuildIdException if the guild ID is invalid or the bot is not a member
+     */
     @NotNull
     private Guild getGuild() {
         return ofNullable(this.jda.getGuildById(this.guildId))
