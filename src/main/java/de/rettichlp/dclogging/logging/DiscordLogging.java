@@ -1,6 +1,8 @@
 package de.rettichlp.dclogging.logging;
 
 import de.rettichlp.dclogging.message.MessageTemplate;
+import lombok.Builder;
+import lombok.Getter;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.entities.Guild;
@@ -24,37 +26,58 @@ import static net.dv8tion.jda.api.utils.FileUpload.fromData;
 import static net.dv8tion.jda.api.utils.cache.CacheFlag.MEMBER_OVERRIDES;
 import static net.dv8tion.jda.api.utils.cache.CacheFlag.VOICE_STATE;
 
+@Builder
 public class DiscordLogging {
 
+    /**
+     * The Java Discord API (JDA) instance that handles the interaction with the Discord API. This instance is used to send messages,
+     * join guilds, and manage other Discord-related operations. It is initialized through the {@code botToken()} method in the
+     * builder.
+     */
+    @Getter
     private final JDA jda;
-    private final String guildId;
-    private final String textChannelId;
-    private final boolean appendStacktraceToError;
-    private final MessageTemplate infoMessageTemplate;
-    private final MessageTemplate warnMessageTemplate;
-    private final MessageTemplate errorMessageTemplate;
 
-    public DiscordLogging(JDA jda, String guildId, String textChannelId, boolean appendStacktraceToError, MessageTemplate infoMessageTemplate, MessageTemplate warnMessageTemplate, MessageTemplate errorMessageTemplate) {
-        this.jda = jda;
-        this.guildId = guildId;
-        this.textChannelId = textChannelId;
-        this.appendStacktraceToError = appendStacktraceToError;
-        this.infoMessageTemplate = infoMessageTemplate;
-        this.warnMessageTemplate = warnMessageTemplate;
-        this.errorMessageTemplate = errorMessageTemplate;
-    }
+    /**
+     * The ID of the Discord guild (server) where logging messages will be sent. This field defaults to an empty string if no guild ID
+     * is provided.
+     */
+    @Builder.Default
+    private final String guildId = "";
 
-    public void log(@NotNull String message, @NotNull Level level) {
-        log(message, level, null, this.textChannelId);
-    }
+    /**
+     * The ID of the Discord text channel where logging messages will be sent. This field defaults to an empty string if no text
+     * channel ID is provided.
+     */
+    @Builder.Default
+    private final String textChannelId = "";
 
-    public void log(@NotNull String message, @NotNull Level level, @Nullable Throwable throwable) {
-        log(message, level, throwable, this.textChannelId);
-    }
+    /**
+     * Indicates whether stack traces should be appended to error messages. This field is set to {@code true} by default, meaning that
+     * stack traces will be included in error messages unless specified otherwise.
+     */
+    @Builder.Default
+    private final boolean appendStacktraceToError = true;
 
-    public void log(@NotNull String message, @NotNull Level level, @NotNull String textChannelId) {
-        log(message, level, null, textChannelId);
-    }
+    /**
+     * The template used for sending informational messages (e.g., logs at the INFO level). This field defaults to a standard
+     * {@link MessageTemplate} for INFO-level messages.
+     */
+    @Builder.Default
+    private final MessageTemplate infoMessageTemplate = new MessageTemplate(INFO);
+
+    /**
+     * The template used for sending warning messages (e.g., logs at the WARN level). This field defaults to a standard
+     * {@link MessageTemplate} for WARN-level messages.
+     */
+    @Builder.Default
+    private final MessageTemplate warnMessageTemplate = new MessageTemplate(WARN);
+
+    /**
+     * The template used for sending error messages (e.g., logs at the ERROR level). This field defaults to a standard
+     * {@link MessageTemplate} for ERROR-level messages.
+     */
+    @Builder.Default
+    private final MessageTemplate errorMessageTemplate = new MessageTemplate(ERROR);
 
     public void log(@NotNull String message, @NotNull Level level, @Nullable Throwable throwable, @NotNull String textChannelId) {
         switch (level) {
