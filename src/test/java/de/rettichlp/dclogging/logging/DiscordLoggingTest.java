@@ -1,8 +1,11 @@
 package de.rettichlp.dclogging.logging;
 
+import de.rettichlp.dclogging.exception.InvalidChannelIdException;
+import de.rettichlp.dclogging.exception.InvalidGuildIdException;
+import net.dv8tion.jda.api.JDA;
+import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.requests.restaction.MessageCreateAction;
-import net.dv8tion.jda.api.utils.FileUpload;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentMatcher;
@@ -10,256 +13,159 @@ import org.mockito.ArgumentMatcher;
 import java.util.regex.Pattern;
 
 import static java.util.regex.Pattern.compile;
-import static org.mockito.ArgumentMatchers.any;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
-import static org.slf4j.event.Level.ERROR;
-import static org.slf4j.event.Level.INFO;
-import static org.slf4j.event.Level.WARN;
 
 public class DiscordLoggingTest {
 
-    private TextChannel textChannel;
-
+    private JDA jdaMock;
+    private Guild guildMock;
+    private TextChannel textChannelMock;
     private MessageCreateAction messageCreateAction;
-
     private DiscordLogging discordLogging;
 
     @BeforeEach
-    public void setUp() {
-        this.textChannel = mock(TextChannel.class);
+    void setUp() {
+        this.jdaMock = mock(JDA.class);
+        this.guildMock = mock(Guild.class);
+        this.textChannelMock = mock(TextChannel.class);
         this.messageCreateAction = mock(MessageCreateAction.class);
-        this.discordLogging = spy(DiscordLogging.getBuilder()
-                .botToken("botToken")
-                .guildId("guildId")
-                .textChannelId("textChannelId")
-                .build());
+
+        // Configure mocks
+        when(this.jdaMock.getGuildById(anyString())).thenReturn(this.guildMock);
+        when(this.guildMock.getTextChannelById(anyString())).thenReturn(this.textChannelMock);
+        when(this.textChannelMock.sendMessage(anyString())).thenReturn(this.messageCreateAction);
+
+        // Create the DiscordLogging instance
+        this.discordLogging = DiscordLogging.builder()
+                .jda(this.jdaMock)
+                .guildId("testGuildId")
+                .textChannelId("testChannelId")
+                .build();
     }
 
     @Test
-    public void testDiscordLoggingInfo() {
-        when(this.textChannel.sendMessage(anyString())).thenReturn(this.messageCreateAction);
+    void testInfoMessageSend() {
+        this.discordLogging.info("Test information message");
 
-        doReturn(this.textChannel).when(this.discordLogging).getTextChannel("textChannelId");
-
-        String message = "message_info";
-        this.discordLogging.info(message);
-
-        verify(this.textChannel).sendMessage(argThat(new RegexArgumentMatcher("""
+        StringRegexArgumentMatcher stringRegexArgumentMatcher = new StringRegexArgumentMatcher("""
                 <t:\\d{10}:F> \\*\\*INFORMATION\\*\\*
                 ```fix
-                %s
+                Test information message
                 ```
-                """.formatted(message))));
-        verify(this.messageCreateAction).queue();
+                """);
+
+        // Verify that the message was sent
+        verify(this.textChannelMock, times(1)).sendMessage(argThat(stringRegexArgumentMatcher));
+        verify(this.messageCreateAction, times(1)).queue();
     }
 
     @Test
-    public void testDiscordLoggingWarn() {
-        when(this.textChannel.sendMessage(anyString())).thenReturn(this.messageCreateAction);
+    void testWarnMessageSend() {
+        this.discordLogging.warn("Test warning message");
 
-        doReturn(this.textChannel).when(this.discordLogging).getTextChannel("textChannelId");
-
-        String message = "message_warn";
-        this.discordLogging.warn(message);
-
-        verify(this.textChannel).sendMessage(argThat(new RegexArgumentMatcher("""
+        StringRegexArgumentMatcher stringRegexArgumentMatcher = new StringRegexArgumentMatcher("""
                 <t:\\d{10}:F> \\*\\*WARNING\\*\\*
                 ```bash
-                %s
+                Test warning message
                 ```
-                """.formatted(message))));
-        verify(this.messageCreateAction).queue();
+                """);
+
+        // Verify that the message was sent
+        verify(this.textChannelMock, times(1)).sendMessage(argThat(stringRegexArgumentMatcher));
+        verify(this.messageCreateAction, times(1)).queue();
     }
 
     @Test
-    public void testDiscordLoggingError() {
-        when(this.textChannel.sendMessage(anyString())).thenReturn(this.messageCreateAction);
+    void testErrorMessageSend() {
+        this.discordLogging.error("Test error message");
 
-        doReturn(this.textChannel).when(this.discordLogging).getTextChannel("textChannelId");
-
-        String message = "message_error";
-        this.discordLogging.error(message);
-
-        verify(this.textChannel).sendMessage(argThat(new RegexArgumentMatcher("""
+        StringRegexArgumentMatcher stringRegexArgumentMatcher = new StringRegexArgumentMatcher("""
                 <t:\\d{10}:F> \\*\\*ERROR\\*\\*
                 ```diff
-                - %s
+                - Test error message
                 ```
-                """.formatted(message))));
-        verify(this.messageCreateAction).queue();
+                """);
+
+        // Verify that the message was sent
+        verify(this.textChannelMock, times(1)).sendMessage(argThat(stringRegexArgumentMatcher));
+        verify(this.messageCreateAction, times(1)).queue();
     }
 
     @Test
-    public void testDiscordLoggingLevelInfo() {
-        when(this.textChannel.sendMessage(anyString())).thenReturn(this.messageCreateAction);
+    void testInfoMessageSendWithArguments() {
+        this.discordLogging.info("Test {} {}", "information", "message");
 
-        doReturn(this.textChannel).when(this.discordLogging).getTextChannel("textChannelId");
-
-        String message = "message_info";
-        this.discordLogging.log(message, INFO);
-
-        verify(this.textChannel).sendMessage(argThat(new RegexArgumentMatcher("""
+        StringRegexArgumentMatcher stringRegexArgumentMatcher = new StringRegexArgumentMatcher("""
                 <t:\\d{10}:F> \\*\\*INFORMATION\\*\\*
                 ```fix
-                %s
+                Test information message
                 ```
-                """.formatted(message))));
-        verify(this.messageCreateAction).queue();
+                """);
+
+        // Verify that the message was sent
+        verify(this.textChannelMock, times(1)).sendMessage(argThat(stringRegexArgumentMatcher));
+        verify(this.messageCreateAction, times(1)).queue();
     }
 
     @Test
-    public void testDiscordLoggingLevelWarn() {
-        when(this.textChannel.sendMessage(anyString())).thenReturn(this.messageCreateAction);
+    void testWarnMessageSendWithArguments() {
+        this.discordLogging.warn("Test {} {}", "warning", "message");
 
-        doReturn(this.textChannel).when(this.discordLogging).getTextChannel("textChannelId");
-
-        String message = "message_warn";
-        this.discordLogging.log(message, WARN);
-
-        verify(this.textChannel).sendMessage(argThat(new RegexArgumentMatcher("""
+        StringRegexArgumentMatcher stringRegexArgumentMatcher = new StringRegexArgumentMatcher("""
                 <t:\\d{10}:F> \\*\\*WARNING\\*\\*
                 ```bash
-                %s
+                Test warning message
                 ```
-                """.formatted(message))));
-        verify(this.messageCreateAction).queue();
+                """);
+
+        // Verify that the message was sent
+        verify(this.textChannelMock, times(1)).sendMessage(argThat(stringRegexArgumentMatcher));
+        verify(this.messageCreateAction, times(1)).queue();
     }
 
     @Test
-    public void testDiscordLoggingLevelError() {
-        when(this.textChannel.sendMessage(anyString())).thenReturn(this.messageCreateAction);
+    void testErrorMessageSendWithArguments() {
+        this.discordLogging.error("Test {} {}", "error", "message");
 
-        doReturn(this.textChannel).when(this.discordLogging).getTextChannel("textChannelId");
-
-        String message = "message_error";
-        this.discordLogging.log(message, ERROR);
-
-        verify(this.textChannel).sendMessage(argThat(new RegexArgumentMatcher("""
+        StringRegexArgumentMatcher stringRegexArgumentMatcher = new StringRegexArgumentMatcher("""
                 <t:\\d{10}:F> \\*\\*ERROR\\*\\*
                 ```diff
-                - %s
+                - Test error message
                 ```
-                """.formatted(message))));
-        verify(this.messageCreateAction).queue();
+                """);
+
+        // Verify that the message was sent
+        verify(this.textChannelMock, times(1)).sendMessage(argThat(stringRegexArgumentMatcher));
+        verify(this.messageCreateAction, times(1)).queue();
     }
 
     @Test
-    public void testDiscordLoggingDifferentTextChannelInfo() {
-        when(this.textChannel.sendMessage(anyString())).thenReturn(this.messageCreateAction);
+    void testInvalidGuildIdThrowsException() {
+        // Simulate the scenario where the guild is not found
+        when(this.jdaMock.getGuildById(anyString())).thenReturn(null);
 
-        String differentTextChannelId = "differentTextChannelId";
-        doReturn(this.textChannel).when(this.discordLogging).getTextChannel(differentTextChannelId);
-
-        String message = "message_info";
-        this.discordLogging.info(message, differentTextChannelId);
-
-        verify(this.textChannel).sendMessage(argThat(new RegexArgumentMatcher("""
-                <t:\\d{10}:F> \\*\\*INFORMATION\\*\\*
-                ```fix
-                %s
-                ```
-                """.formatted(message))));
-        verify(this.messageCreateAction).queue();
+        assertThrows(InvalidGuildIdException.class, () -> discordLogging.info("Test message"));
     }
 
     @Test
-    public void testDiscordLoggingDifferentTextChannelWarn() {
-        when(this.textChannel.sendMessage(anyString())).thenReturn(this.messageCreateAction);
+    void testInvalidChannelIdThrowsException() {
+        // Simulate the scenario where the text channel is not found
+        when(this.guildMock.getTextChannelById(anyString())).thenReturn(null);
 
-        String differentTextChannelId = "differentTextChannelId";
-        doReturn(this.textChannel).when(this.discordLogging).getTextChannel(differentTextChannelId);
-
-        String message = "message_warn";
-        this.discordLogging.warn(message, differentTextChannelId);
-
-        verify(this.textChannel).sendMessage(argThat(new RegexArgumentMatcher("""
-                <t:\\d{10}:F> \\*\\*WARNING\\*\\*
-                ```bash
-                %s
-                ```
-                """.formatted(message))));
-        verify(this.messageCreateAction).queue();
+        assertThrows(InvalidChannelIdException.class, () -> discordLogging.info("Test message"));
     }
 
-    @Test
-    public void testDiscordLoggingDifferentTextChannelError() {
-        when(this.textChannel.sendMessage(anyString())).thenReturn(this.messageCreateAction);
-
-        String differentTextChannelId = "differentTextChannelId";
-        doReturn(this.textChannel).when(this.discordLogging).getTextChannel(differentTextChannelId);
-
-        String message = "message_error";
-        this.discordLogging.error(message, null, differentTextChannelId);
-
-        verify(this.textChannel).sendMessage(argThat(new RegexArgumentMatcher("""
-                <t:\\d{10}:F> \\*\\*ERROR\\*\\*
-                ```diff
-                - %s
-                ```
-                """.formatted(message))));
-        verify(this.messageCreateAction).queue();
-    }
-
-    @Test
-    public void testDiscordLoggingStacktrace() {
-        when(this.textChannel.sendMessage(anyString())).thenReturn(this.messageCreateAction);
-        when(this.messageCreateAction.addFiles(any(FileUpload.class))).thenReturn(this.messageCreateAction);
-
-        doReturn(this.textChannel).when(this.discordLogging).getTextChannel("textChannelId");
-
-        String message = "message_error";
-        this.discordLogging.error(message, new NullPointerException("test exception"));
-
-        verify(this.textChannel).sendMessage(argThat(new RegexArgumentMatcher("""
-                <t:\\d{10}:F> \\*\\*ERROR\\*\\*
-                ```diff
-                - %s
-                ```
-                """.formatted(message))));
-        verify(this.discordLogging).throwableToInputStream(any(Throwable.class));
-        verify(this.messageCreateAction).addFiles(any(FileUpload.class));
-        verify(this.messageCreateAction).queue();
-    }
-
-    @Test
-    public void testDiscordLoggingStacktraceDisallowed() {
-        DiscordLogging discordLogging = spy(DiscordLogging.getBuilder()
-                .botToken("botToken")
-                .guildId("guildId")
-                .textChannelId("textChannelId")
-                .appendStacktraceToError(false)
-                .build());
-
-        when(this.textChannel.sendMessage(anyString())).thenReturn(this.messageCreateAction);
-        when(this.messageCreateAction.addFiles(any(FileUpload.class))).thenReturn(this.messageCreateAction);
-
-        doReturn(this.textChannel).when(discordLogging).getTextChannel("textChannelId");
-
-        String message = "message_error";
-        discordLogging.error(message, new NullPointerException("test exception"));
-
-        verify(this.textChannel).sendMessage(argThat(new RegexArgumentMatcher("""
-                <t:\\d{10}:F> \\*\\*ERROR\\*\\*
-                ```diff
-                - %s
-                ```
-                """.formatted(message))));
-        verify(this.messageCreateAction).queue();
-        verifyNoMoreInteractions(this.messageCreateAction);
-    }
-
-    private static class RegexArgumentMatcher implements ArgumentMatcher<String> {
+    private static class StringRegexArgumentMatcher implements ArgumentMatcher<String> {
 
         private final Pattern pattern;
 
-        RegexArgumentMatcher(String regex) {
+        StringRegexArgumentMatcher(String regex) {
             this.pattern = compile(regex);
         }
 

@@ -5,56 +5,54 @@ import org.junit.jupiter.api.Test;
 import static de.rettichlp.dclogging.message.MessageTemplate.MessageTemplateType.ERROR;
 import static de.rettichlp.dclogging.message.MessageTemplate.MessageTemplateType.INFO;
 import static de.rettichlp.dclogging.message.MessageTemplate.MessageTemplateType.WARN;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class MessageTemplateTest {
 
     @Test
-    public void testMessageTemplateInfo() {
-        MessageTemplate messageTemplate = new MessageTemplate(INFO);
+    void testApplyMessageInfo() {
+        MessageTemplate template = new MessageTemplate(INFO);
 
-        String message = "test_message_info";
-        String result = messageTemplate.applyMessage(message);
+        String formattedMessage = template.applyMessage("This is a test message");
 
-        assert result.matches("""
+        assertTrue(formattedMessage.matches("""
                 <t:\\d{10}:F> \\*\\*INFORMATION\\*\\*
                 ```fix
-                %s
+                This is a test message
                 ```
-                """.formatted(message));
+                """));
     }
 
     @Test
-    public void testMessageTemplateWarn() {
-        MessageTemplate messageTemplate = new MessageTemplate(WARN);
+    void testApplyMessageWarn() {
+        MessageTemplate template = new MessageTemplate(WARN);
 
-        String message = "test_message_warn";
-        String result = messageTemplate.applyMessage(message);
+        String formattedMessage = template.applyMessage("This is a test message");
 
-        assert result.matches("""
+        assertTrue(formattedMessage.matches("""
                 <t:\\d{10}:F> \\*\\*WARNING\\*\\*
                 ```bash
-                %s
+                This is a test message
                 ```
-                """.formatted(message));
+                """));
     }
 
     @Test
-    public void testMessageTemplateError() {
-        MessageTemplate messageTemplate = new MessageTemplate(ERROR);
+    void testApplyMessageError() {
+        MessageTemplate template = new MessageTemplate(ERROR);
 
-        String message = "test_message_error";
-        String result = messageTemplate.applyMessage(message);
+        String formattedMessage = template.applyMessage("This is a test message");
 
-        assert result.matches("""
+        assertTrue(formattedMessage.matches("""
                 <t:\\d{10}:F> \\*\\*ERROR\\*\\*
                 ```diff
-                - %s
+                - This is a test message
                 ```
-                """.formatted(message));
+                """));
     }
 
     @Test
-    public void testMessageTemplateCustom() {
+    void testMessageTemplateCustom() {
         String customMessageTemplate = "%timestamp% - %message% - test123";
         MessageTemplate messageTemplate = new MessageTemplate(customMessageTemplate);
 
