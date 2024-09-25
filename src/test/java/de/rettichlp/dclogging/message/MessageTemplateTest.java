@@ -52,7 +52,7 @@ public class MessageTemplateTest {
     }
 
     @Test
-    public void testMessageTemplateCustom() {
+    void testMessageTemplateCustom() {
         String customMessageTemplate = "%timestamp% - %message% - test123";
         MessageTemplate messageTemplate = new MessageTemplate(customMessageTemplate);
 

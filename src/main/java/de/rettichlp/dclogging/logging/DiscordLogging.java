@@ -146,7 +146,7 @@ public class DiscordLogging {
          *
          * @return the {@code DiscordLoggingBuilder} instance for chaining additional configuration.
          *
-         * @throws InterruptedException  if the thread is interrupted while waiting for the JDA to be ready.
+         * @throws InterruptedException if the thread is interrupted while waiting for the JDA to be ready.
          */
         public DiscordLoggingBuilder botToken(String botToken) throws InterruptedException {
             this.jda = botToken.equals("botToken") ? null : JDABuilder
